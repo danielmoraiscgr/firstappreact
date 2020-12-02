@@ -1,4 +1,4 @@
-import React, { useState, FormEvent } from "react";
+import React, { useState, FormEvent, useEffect } from "react";
 import { FiChevronRight } from "react-icons/fi";
 import api from "../../services/api";
 
@@ -7,38 +7,54 @@ import logoImg from "../../assets/logo.svg";
 import { Title, Form, Repositories, Error } from "./styles";
 
 interface Repository {
-     full_name: string; 
-     description: string;
-     owner: {
-          login: string;
-          avatar_url: string;
-     };
+  full_name: string;
+  description: string;
+  owner: {
+    login: string;
+    avatar_url: string;
+  };
 }
 const Dashboard: React.FC = () => {
-  const [newRepo, setNewRepo] = useState('');
-  const [inputError, SetInputError]= useState('');
-  const [repositories, setRepositories] = useState<Repository[]>([]);
+  const [newRepo, setNewRepo] = useState("");
+  const [inputError, SetInputError] = useState("");
+  const [repositories, setRepositories] = useState<Repository[]>(() => {
+    const storagedRepositories = localStorage.getItem(
+      "@GithubExplorer:repositories"
+    );
+
+    if (storagedRepositories) {
+      return JSON.parse(storagedRepositories);
+    } else {
+         return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem(
+      "@GithubExplorer:repositories",
+      JSON.stringify(repositories)
+    );
+  }, [repositories]);
 
   async function handleAddRepository(
     event: FormEvent<HTMLFormElement>
   ): Promise<void> {
- 
     event.preventDefault();
 
     if (!newRepo) {
-         SetInputError('Digite o autor/nome do repositório');
-         return;
+      SetInputError("Digite o autor/nome do repositório");
+      return;
     }
     try {
-          const response = await api.get<Repository>(`repos/${newRepo}`);
+      const response = await api.get<Repository>(`repos/${newRepo}`);
 
-          const repository = response.data;
+      const repository = response.data;
 
-    setRepositories([...repositories, repository]);
-    setNewRepo('');
-    SetInputError('');
+      setRepositories([...repositories, repository]);
+      setNewRepo("");
+      SetInputError("");
     } catch (err) {
-          SetInputError('Erro na busca por esse repositório');
+      SetInputError("Erro na busca por esse repositório");
     }
   }
 
@@ -55,23 +71,23 @@ const Dashboard: React.FC = () => {
         />
         <button> Pesquisar </button>
       </Form>
-      
-      { inputError && <Error> {inputError} </Error>}
+
+      {inputError && <Error> {inputError} </Error>}
 
       <Repositories>
-       {repositories.map(repository =>(
-             <a key={repository.full_name} href="teste">
-             <img
-               src={repository.owner.avatar_url}
-               alt={repository.owner.login}
-             />
-             <div>
-               <strong> {repository.full_name} </strong>
-               <p> {repository.description} </p>
-             </div>
-             <FiChevronRight size={20} />
-           </a>
-       ))}
+        {repositories.map((repository) => (
+          <a key={repository.full_name} href="teste">
+            <img
+              src={repository.owner.avatar_url}
+              alt={repository.owner.login}
+            />
+            <div>
+              <strong> {repository.full_name} </strong>
+              <p> {repository.description} </p>
+            </div>
+            <FiChevronRight size={20} />
+          </a>
+        ))}
       </Repositories>
     </>
   );
